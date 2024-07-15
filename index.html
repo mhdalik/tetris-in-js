@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+
+<body>
+</body>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
+<script>
+    let displayHeight = 800
+    let displayWidth = 600
+    let cubeWidth = 40
+    let canvasMatrix = Array.from({ length: 20 }, () => Array.from({ length: 10 }, () => 0));
+    let elementsMatrix = [
+        { live: true, color: 'green', positions: [{ row: 2, col: 6 }] },
+        { live: false, color: 'orange', positions: [{ row: 18, col: 5 }] },
+        { live: false, color: 'blue', positions: [{ row: 19, col: 4 }, { row: 19, col: 5 }, { row: 19, col: 9 }] },
+    ]
+
+    function setup() {
+        createCanvas(displayWidth, displayHeight);
+        background('green');
+
+        // rect(500, 700, cubeWidth, cubeWidth);
+        let addBtn = createButton('add');
+        addBtn.position(450, 500);
+        addBtn.size(100, 60);
+        addBtn.mousePressed(addNewElement);
+
+        let leftBtn = createButton('Left');
+        leftBtn.position(450, 550);
+        leftBtn.size(100, 60);
+        leftBtn.mousePressed(moveLeft);
+
+        let rightBtn = createButton('right');
+        rightBtn.position(450, 610);
+        rightBtn.size(100, 60);
+        rightBtn.mousePressed(moveRight);
+
+        let downBtn = createButton('Down');
+        downBtn.position(450, 700);
+        downBtn.size(100, 60);
+        downBtn.mousePressed(moveDown);
+
+
+
+
+        canvasMatrix.forEach((row, rowIndx) => {
+            posX = rowIndx * cubeWidth
+            row.forEach((item, colIndx) => {
+                if (item == 1) {
+                    fill('yellow')
+                } else {
+                    fill('grey')
+                }
+                posY = (colIndx * cubeWidth)
+                rect(posY, posX, cubeWidth, cubeWidth);
+            })
+        })
+    }
+
+    function draw() {
+        canvasMatrix.forEach((row, rowIndx) => {
+            posX = rowIndx * cubeWidth
+            row.forEach((item, colIndx) => {
+                if (item == 1) {
+                    fill('yellow')
+                } else {
+                    fill('grey')
+                }
+                posY = (colIndx * cubeWidth)
+                rect(posY, posX, cubeWidth, cubeWidth);
+            })
+        })
+
+        elementsMatrix.forEach((element) => {
+            element.positions.forEach(({ row, col }) => {
+                fill(element.color)
+                posX = row * cubeWidth
+                posY = col * cubeWidth
+                // console.log(row, col);
+                rect(posY, posX, cubeWidth, cubeWidth)
+            })
+        })
+        // console.log('----------------');
+    }
+
+    function moveDown() {
+        // console.error('down');
+        // return
+        elementsMatrix.forEach((element) => {
+            if (element.live) {
+                element.positions.forEach((position) => {
+                    let isNotReachedDown = position.row < 19
+
+                    if (isNotReachedDown) {
+                        position.row += 1
+                        canvasMatrix[position.row][position.col] = 0
+                    }
+                    // set live = false if it reached end
+                })
+            }
+        })
+    }
+
+    function moveLeft() {
+        // console.error('down');
+        // return
+        elementsMatrix.forEach((element) => {
+            if (element.live) {
+                return element.positions.forEach((position) => {
+                    let isReachedDown = position.col > 0
+                    if (isReachedDown) {
+                        position.col -= 1
+                        canvasMatrix[position.row][position.col] = 0
+                    }
+                })
+            }
+        })
+    }
+
+    function moveRight() {
+        // console.error('down');
+        // return
+        elementsMatrix.forEach((element) => {
+            let firstExist = false;
+            if (element.live && !firstExist) {
+                return element.positions.forEach((position) => {
+                    let isNotReachedRight = position.col < 9
+                    if (isNotReachedRight) {
+                        position.col += 1
+                        // canvasMatrix[position.row][position.col] = 0
+                    }
+                })
+                // stop the loop
+            }
+        })
+    }
+
+    function addNewElement() {
+        elementsMatrix.push({ live: true, color: 'red', positions: [{ row: 1, col: 6 }] })
+    }
+
+</script>
+
+</html>
