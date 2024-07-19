@@ -1,7 +1,40 @@
 <!DOCTYPE html>
 <html>
 
+<head>
+    <style>
+        #container {
+            display: flex;
+            align-items: flex-start;
+        }
+
+        #info {
+            margin-left: 10px;
+            /* Adjust the spacing as needed */
+        }
+
+        #matrixDisplay {
+            font-size: larger;
+        }
+
+        p {
+            font-family: Arial, sans-serif;
+        }
+    </style>
+</head>
+
 <body>
+    <div id="container">
+        <div id="canvasContainer"></div>
+        <div id="info" style="display: none;">
+            <p id="matrixDisplay">
+                <!-- loop the canvasMatrix variable array here and display as separate lines for each array in it-->
+            </p>
+            <p id="elementsDisplay">
+                <!-- loop the elementsMatrix variable array here and display as separate lines for each array in it-->
+            </p>
+        </div>
+    </div>
 </body>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
@@ -11,13 +44,18 @@
     let cubeWidth = 40
     let canvasMatrix = Array.from({ length: 20 }, () => Array.from({ length: 10 }, () => 0));
     let elementsMatrix = [
-        { live: true, color: 'green', positions: [{ row: 2, col: 6 }] },
-        { live: false, color: 'orange', positions: [{ row: 18, col: 5 }] },
-        { live: false, color: 'blue', positions: [{ row: 19, col: 4 }, { row: 19, col: 5 }, { row: 19, col: 9 }] },
+        // { live: true, color: 'green', positions: [{ row: 2, col: 6 }] },
+        // { live: false, color: 'orange', positions: [{ row: 18, col: 5 }] },
+        // { live: false, color: 'blue', positions: [{ row: 19, col: 4 }, { row: 19, col: 5 }, { row: 19, col: 9 }] },
     ]
 
+
+    let moveInterval = 3; // Adjust this value to change the speed
+    let lastMoveFrame = 0;
+
     function setup() {
-        createCanvas(displayWidth, displayHeight);
+        let canvas = createCanvas(displayWidth, displayHeight);
+        canvas.parent('canvasContainer');
         background('green');
 
         // rect(500, 700, cubeWidth, cubeWidth);
@@ -42,8 +80,6 @@
         downBtn.mousePressed(moveDown);
 
 
-
-
         canvasMatrix.forEach((row, rowIndx) => {
             posX = rowIndx * cubeWidth
             row.forEach((item, colIndx) => {
@@ -59,6 +95,7 @@
     }
 
     function draw() {
+        addNewElement();
         canvasMatrix.forEach((row, rowIndx) => {
             posX = rowIndx * cubeWidth
             row.forEach((item, colIndx) => {
@@ -82,64 +119,158 @@
             })
         })
         // console.log('----------------');
+
+        if (keyIsDown(LEFT_ARROW)) {
+            if (frameCount - lastMoveFrame >= moveInterval) {
+                moveLeft();
+                lastMoveFrame = frameCount;
+            }
+        }
+        if (keyIsDown(RIGHT_ARROW)) {
+            if (frameCount - lastMoveFrame >= moveInterval) {
+                moveRight();
+                lastMoveFrame = frameCount;
+            }
+        }
+        if (keyIsDown(DOWN_ARROW)) {
+            if (frameCount - lastMoveFrame >= moveInterval) {
+                moveDown();
+                lastMoveFrame = frameCount;
+            }
+        }
+
+        checkGameOver();
+        updateMatrixDisplay();
     }
 
     function moveDown() {
-        // console.error('down');
-        // return
         elementsMatrix.forEach((element) => {
             if (element.live) {
-                element.positions.forEach((position) => {
-                    let isNotReachedDown = position.row < 19
-
+                let canMoveDown = true
+                element.positions.forEach((position) => { // check there is empty space at the left side of each element's each block
+                    let isNotReachedDown = position.row != 19
                     if (isNotReachedDown) {
-                        position.row += 1
-                        canvasMatrix[position.row][position.col] = 0
+                        let noElementAtDown = canvasMatrix[position.row + 1][position.col] == 0
+                        if (!noElementAtDown) {
+                            canMoveDown = false;
+                            canvasMatrix[position.row][position.col] = 1
+                            markEndedElemntToCanvas(element.positions)
+                            element.live = false
+                        }
+                    } else {
+                        canMoveDown = false;
+                        canvasMatrix[position.row][position.col] = 1
+                        markEndedElemntToCanvas(element.positions)
+                        element.live = false
                     }
-                    // set live = false if it reached end
                 })
+
+                if (canMoveDown) {
+                    element.positions.forEach((position) => { position.row += 1 })
+                }
             }
         })
     }
 
     function moveLeft() {
-        // console.error('down');
-        // return
         elementsMatrix.forEach((element) => {
             if (element.live) {
-                return element.positions.forEach((position) => {
-                    let isReachedDown = position.col > 0
-                    if (isReachedDown) {
-                        position.col -= 1
-                        canvasMatrix[position.row][position.col] = 0
+                let hasLeftSpace = true
+                element.positions.forEach((position) => { // check there is empty space at the left side of each element's each block
+                    let isNotReachedLeft = position.col > 0
+                    let noElementAtLeft = canvasMatrix[position.row][position.col - 1] == 0
+                    let canMoveLeft = isNotReachedLeft && noElementAtLeft
+                    if (!canMoveLeft) {
+                        hasLeftSpace = false;
                     }
                 })
+
+                if (hasLeftSpace) {
+                    return element.positions.forEach((position) => {
+                        let isNotReachedLeft = position.col > 0
+                        if (isNotReachedLeft) {
+                            position.col -= 1
+                        }
+                    })
+                }
             }
         })
     }
 
     function moveRight() {
-        // console.error('down');
-        // return
         elementsMatrix.forEach((element) => {
-            let firstExist = false;
-            if (element.live && !firstExist) {
-                return element.positions.forEach((position) => {
+            if (element.live) {
+                let canMoveToRight = true
+                element.positions.forEach((position) => { // check there is empty space at the left side of each element's each block
                     let isNotReachedRight = position.col < 9
-                    if (isNotReachedRight) {
-                        position.col += 1
-                        // canvasMatrix[position.row][position.col] = 0
+                    let noElementAtRight = canvasMatrix[position.row][position.col + 1] == 0
+                    let canMoveRight = isNotReachedRight && noElementAtRight
+                    if (!canMoveRight) {
+                        canMoveToRight = false;
+                        // console.log('not canMoveLeft');
                     }
                 })
-                // stop the loop
+
+                if (canMoveToRight) {
+                    return element.positions.forEach((position) => {
+                        let isNotReachedRight = position.col < 9
+                        if (isNotReachedRight) {
+                            position.col += 1
+                            // canvasMatrix[position.row][position.col] = 0
+                        }
+                    })
+                }
             }
         })
     }
 
-    function addNewElement() {
-        elementsMatrix.push({ live: true, color: 'red', positions: [{ row: 1, col: 6 }] })
+    function markEndedElemntToCanvas(positions) {
+        positions.forEach((position) => {
+            canvasMatrix[position.row][position.col] = 1
+        })
     }
 
+    function addNewElement() {
+        const allowedElements = [
+            { live: true, color: 'red', positions: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 0 }, { row: 1, col: 1 }] },
+            { live: true, color: 'green', positions: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }, { row: 0, col: 3 }] },
+            { live: true, color: 'blue', positions: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }, { row: 1, col: 0 }] },
+            { live: true, color: 'orange', positions: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }, { row: 1, col: 2 }] },
+            { live: true, color: 'yellow', positions: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 1 }, { row: 1, col: 2 }] },
+            { live: true, color: 'purple', positions: [{ row: 0, col: 1 }, { row: 0, col: 2 }, { row: 1, col: 0 }, { row: 1, col: 1 }] },
+            { live: true, color: 'pink', positions: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }, { row: 0, col: 3 }] },
+        ]
+
+        let canAddNewElement = true;
+        elementsMatrix.forEach((element) => {
+            if (element.live) {
+                canAddNewElement = false;
+            }
+        })
+
+        if (canAddNewElement) {
+            // let col = Math.floor(Math.random() * 10);
+            // let color = random(['red', 'green', 'blue', 'orange'])
+            let element = random(allowedElements)
+            element.live = true
+            elementsMatrix.push(element)
+        }
+    }
+    function updateMatrixDisplay() {
+        let matrixDisplay = document.getElementById('matrixDisplay');
+        matrixDisplay.innerHTML = canvasMatrix.map(row => row.join(', ')).join('<br>');
+
+        let elementsDisplay = document.getElementById('elementsDisplay');
+        elementsDisplay.innerHTML = JSON.stringify(elementsMatrix);
+    }
+    function checkGameOver() {
+        canvasMatrix[0].forEach((firstRowItem) => {
+            if (firstRowItem === 1) {
+                alert('Game Over')
+                canvasMatrix = Array.from({ length: 20 }, () => Array.from({ length: 10 }, () => 0));
+            }
+        })
+    }
 </script>
 
 </html>
